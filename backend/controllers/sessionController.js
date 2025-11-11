@@ -1,20 +1,92 @@
-const http = require("http");
-const { Server } = require("socket.io");
+// const http = require("http");
+// const { Server } = require("socket.io");
 
-const express = require("express");
-const path = require("path");
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
-app.use(express.static(path.join(__dirname))); // serve HTML files
+// const express = require("express");
+// const path = require("path");
+// const app = express();
+// const server = http.createServer(app);
+// const io = new Server(server, { cors: { origin: "*" } });
+// app.use(express.static(path.join(__dirname))); // serve HTML files
 
-// === In-memory storage ===
-const sessions = new Map(); // code -> { participants: Map<socketId, name>, active: bool }
+// // === In-memory storage ===
+// const sessions = new Map(); // code -> { participants: Map<socketId, name>, active: bool }
+
+// function generateCode() {
+//   return Math.floor(100000 + Math.random() * 900000).toString();
+// }
+
+// exports.startSession = (req, res) => {
+//   const code = generateCode();
+//   sessions.set(code, { participants: new Map(), active: true });
+//   console.log(`✅ Session started with code: ${code}`);
+//   res.json({ code });
+// };
+
+// exports.endSession = (req, res) => {
+//   const code = req.params.code;
+//   if (!code) {
+//     return res.status(400).json({ message: "Session code is required" });
+//   }
+//   const session = sessions.get(code);
+//   if (!session) return res.status(404).json({ message: "Session not found" });
+
+//   session.active = false;
+//   io.to(code).emit("session-ended");
+//   sessions.delete(code);
+//   console.log(`✅ Session ended with code: ${code}`);
+//   res.json({ message: "Session ended" });
+// };
+
+// // === Socket.IO logic ===
+// io.on("connection", (socket) => {
+//   console.log("🧩 New connection:", socket.id);
+
+//   // Presenter joins room
+//   socket.on("presenter-join", (code) => {
+//     const session = sessions.get(code);
+//     if (!session)
+//       return socket.emit("error", { message: "Invalid session code" });
+//     socket.join(code);
+//     socket.emit("participant-list", Array.from(session.participants.values()));
+//     console.log(`Presenter joined session ${code}`);
+//   });
+
+//   // Participant joins
+//   socket.on("join-session", ({ name, code }) => {
+//     const session = sessions.get(code);
+//     if (!session || !session.active)
+//       return socket.emit("error", { message: "Invalid or inactive session" });
+
+//     session.participants.set(socket.id, name);
+//     socket.join(code);
+//     io.to(code).emit(
+//       "participant-list",
+//       Array.from(session.participants.values())
+//     );
+//     console.log(`${name} joined session ${code}`);
+//   });
+
+//   // Handle disconnect
+//   socket.on("disconnect", () => {
+//     for (const [code, session] of sessions.entries()) {
+//       if (session.participants.delete(socket.id)) {
+//         io.to(code).emit(
+//           "participant-list",
+//           Array.from(session.participants.values())
+//         );
+//       }
+//     }
+//   });
+// });
+
+// === In-memory sessions ===
+const sessions = new Map();
 
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
+// --- API Controllers ---
 exports.startSession = (req, res) => {
   const code = generateCode();
   sessions.set(code, { participants: new Map(), active: true });
@@ -24,59 +96,60 @@ exports.startSession = (req, res) => {
 
 exports.endSession = (req, res) => {
   const code = req.params.code;
-  if (!code) {
-    return res.status(400).json({ message: "Session code is required" });
-  }
-  const session = sessions.get(code);
-  if (!session) return res.status(404).json({ message: "Session not found" });
+  const io = req.app.locals.io;
 
-  session.active = false;
+  if (!sessions.has(code))
+    return res.status(404).json({ message: "Session not found" });
+
   io.to(code).emit("session-ended");
   sessions.delete(code);
+  console.log(`🚪 Session ended: ${code}`);
   res.json({ message: "Session ended" });
 };
 
-// === Socket.IO logic ===
-io.on("connection", (socket) => {
-  console.log("🧩 New connection:", socket.id);
+// --- Socket.IO Logic ---
+exports.initSocket = (io) => {
+  io.on("connection", (socket) => {
+    console.log("🧩 New connection:", socket.id);
 
-  // Presenter joins room
-  socket.on("presenter-join", (code) => {
-    const session = sessions.get(code);
-    if (!session)
-      return socket.emit("error", { message: "Invalid session code" });
-    socket.join(code);
-    socket.emit("participant-list", Array.from(session.participants.values()));
-    console.log(`Presenter joined session ${code}`);
-  });
+    socket.on("presenter-join", (code) => {
+      const session = sessions.get(code);
+      if (!session)
+        return socket.emit("error", { message: "Invalid session code" });
+      socket.join(code);
+      socket.emit(
+        "participant-list",
+        Array.from(session.participants.values())
+      );
+      console.log(`Presenter joined session ${code}`);
+    });
 
-  // Participant joins
-  socket.on("join-session", ({ name, code }) => {
-    const session = sessions.get(code);
-    if (!session || !session.active)
-      return socket.emit("error", { message: "Invalid or inactive session" });
+    socket.on("join-session", ({ name, code }) => {
+      const session = sessions.get(code);
+      if (!session || !session.active)
+        return socket.emit("error", { message: "Invalid or inactive session" });
 
-    session.participants.set(socket.id, name);
-    socket.join(code);
-    io.to(code).emit(
-      "participant-list",
-      Array.from(session.participants.values())
-    );
-    console.log(`${name} joined session ${code}`);
-  });
+      session.participants.set(socket.id, name);
+      socket.join(code);
+      io.to(code).emit(
+        "participant-list",
+        Array.from(session.participants.values())
+      );
+      console.log(`${name} joined session ${code}`);
+    });
 
-  // Handle disconnect
-  socket.on("disconnect", () => {
-    for (const [code, session] of sessions.entries()) {
-      if (session.participants.delete(socket.id)) {
-        io.to(code).emit(
-          "participant-list",
-          Array.from(session.participants.values())
-        );
+    socket.on("disconnect", () => {
+      for (const [code, session] of sessions.entries()) {
+        if (session.participants.delete(socket.id)) {
+          io.to(code).emit(
+            "participant-list",
+            Array.from(session.participants.values())
+          );
+        }
       }
-    }
+    });
   });
-});
+};
 
 exports.presenter = (req, res) => {
   res.send(`<!DOCTYPE html>
@@ -99,7 +172,8 @@ const socket = io();
 let currentCode = null;
 
 document.getElementById('start').addEventListener('click', async () => {
-  const res = await fetch('/start-session', { method: 'POST' });
+  console.log('Starting session...');
+  const res = await fetch('http://localhost:3000/api/session/startSession', { method: 'POST' });
   const data = await res.json();
   currentCode = data.code;
   document.getElementById('code').textContent = currentCode;
@@ -111,7 +185,7 @@ document.getElementById('start').addEventListener('click', async () => {
 
 document.getElementById('end').addEventListener('click', async () => {
   if (!currentCode) return alert('No active session');
-  const res = await fetch('/end-session/' + currentCode, { method: 'POST' });
+  const res = await fetch('http://localhost:3000/api/session/endSession/' + currentCode, { method: 'POST' });
   const data = await res.json();
   alert(data.message);
   currentCode = null;
