@@ -1,0 +1,23 @@
+
+# --- Core ---
+Flask==3.0.3
+Flask-Cors==4.0.0
+requests==2.31.0
+
+# --- Machine Learning / Deep Learning ---
+tensorflow==2.15.0
+numpy==1.26.4
+opencv-python==4.9.0.80
+
+# --- MongoDB ---
+pymongo==4.8.0
+
+# --- Utilities ---
+Pillow==10.3.0
+imutils==0.5.4
+scikit-learn==1.5.1
+matplotlib==3.9.0
+
+# --- Optional (only if using async or background tasks) ---
+eventlet==0.36.1
+
