@@ -71,6 +71,7 @@ from flask import Flask, jsonify, request
 from detection import DetectionWorker
 from pymongo import MongoClient
 from bson import ObjectId
+import os
 
 app = Flask(__name__)
 
@@ -179,6 +180,8 @@ def get_mode():
         "thresholds": current_mode
     })
 
-
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
+    port = int(os.environ.get("PORT", 5000))   # Render sets $PORT, fallback to 5000 locally
+    app.run(host="0.0.0.0", port=port, debug=True)
+# if __name__ == "__main__":
+#     app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
