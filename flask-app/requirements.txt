@@ -6,7 +6,7 @@ requests==2.31.0
 
 # --- Machine Learning / Deep Learning ---
 tensorflow==2.20.0
-numpy==1.23.5
+numpy>=1.26.0
 opencv-python==4.7.0.72
 
 # --- MongoDB ---
