@@ -1,72 +1,4 @@
 
-# from flask import Flask, jsonify
-# from detection import start_detection, stop_detection, get_latest_result, get_session_report
-# from datetime import datetime
-# import uuid
-
-# app = Flask(__name__)
-
-
-# @app.route("/start", methods=["POST"])
-# def start():
-#     start_detection()
-#     return jsonify({"status": "started"})
-
-
-# @app.route("/stop", methods=["POST"])
-# def stop():
-#     stop_detection()
-#     return jsonify({"status": "stopped"})
-
-
-# @app.route("/latest", methods=["GET"])
-# def latest():
-#     return jsonify(get_latest_result())
-
-
-# @app.route("/report", methods=["GET"])
-# def report():
-#     return jsonify(get_session_report())
-
-
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
-
-# from flask import Flask, jsonify
-# from detection import DetectionWorker
-
-# app = Flask(__name__)
-
-# # Create one global worker instance
-# worker = DetectionWorker()
-
-
-# @app.route("/start", methods=["POST"])
-# def start():
-#     worker.start()
-#     return jsonify({"status": "started"})
-
-
-# @app.route("/stop", methods=["POST"])
-# def stop():
-#     worker.stop()
-#     return jsonify({"status": "stopped"})
-
-
-# @app.route("/latest", methods=["GET"])
-# def latest():
-#     return jsonify(worker.get_latest())
-
-
-# @app.route("/report", methods=["GET"])
-# def report():
-#     return jsonify(worker.get_session_report())
-
-
-# if __name__ == "__main__":
-#     app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
-
-
 from flask import Flask, jsonify, request
 from detection import DetectionWorker
 from pymongo import MongoClient
@@ -108,19 +40,6 @@ def start():
     worker.start(student_name)  # pass student number to worker
     return jsonify({"status": "started", "student_name": student_name})
 
-
-# @app.route("/stop", methods=["POST"])
-# def stop():
-#     worker.stop()
-
-#     # Get session report
-#     report = worker.get_session_report()
-
-#     if report:
-#         # Save to MongoDB
-#         reports_collection.insert_one(report)
-
-#     return jsonify({"status": "stopped", "report": report})
 
 @app.route("/stop", methods=["POST"])
 def stop():
@@ -181,4 +100,4 @@ def get_mode():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True, threaded=True)
+    app.run(host="0.0.0.0", port=5001, debug=True, threaded=True)
