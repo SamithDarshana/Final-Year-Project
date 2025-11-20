@@ -39,7 +39,7 @@ app.get("/", (req, res) => {
 //   console.log(`Server + Socket.IO running on port ${PORT}`)
 // );
 
-export default app;
+module.exports = app;
 
 // model routes
 // app.post("/start", async (req, res) => {
