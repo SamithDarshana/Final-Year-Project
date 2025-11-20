@@ -13,10 +13,10 @@ class DetectionWorker:
     # "mongodb://localhost:27017", db_name="smart_classroom"):
     def __init__(self, camera_index=0, mongo_uri="mongodb+srv://samithdarshana:1234@cluster0.wupnzmn.mongodb.net/?appName=Cluster0", db_name="Smart-Classroom-App"):
         # === Load Models ===
-        self.eye_model = load_model(
-            "models/eye_state_cnn_224.h5")
         # self.eye_model = load_model(
-        #     "models/Eye-State-Detection-DenseNet121.h5")
+        #     "models/eye_state_cnn_224.h5")
+        self.eye_model = load_model(
+            "models/Eye-State-Detection-DenseNet121.h5")
         self.yawn_model = load_model("models/yawn_detector_model.h5")
         self.emotion_model = load_model("models/emotion_detector_model.h5")
 
