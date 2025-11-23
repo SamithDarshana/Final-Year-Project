@@ -15,7 +15,12 @@ const connectDB = require("./config/db");
 connectDB();
 
 // Middleware
-app.use(cors());
+app.use(cors({ 
+  origin: ["http://localhost:5075", "https://localhost:7205"],
+  methods: "GET,POST,PUT,DELETE",
+  allowedHeaders: "Content-Type,Authorization",
+  credentials: true 
+}));
 app.use(express.json());
 app.use(express.static(path.join(__dirname))); // serve HTML files
 
