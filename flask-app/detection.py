@@ -460,7 +460,8 @@ class DetectionWorker:
         # self.eye_model = load_model(
         #     "models/Eye-State-Detection-DenseNet121.h5")
         # self.yawn_model = load_model("models/yawn_detector_model.h5")
-        self.yawn_model = load_model("models/yawn_detector_densenet121.h5")
+        self.yawn_model = load_model(
+            "models/yawn_detector_densenet121_96_2.0.h5")
         self.emotion_model = load_model("models/emotion_detector_model.h5")
         self.behavior_model = load_model(
             "models/student_behavior_model_2.0.h5")

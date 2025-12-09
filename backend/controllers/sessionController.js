@@ -1,5 +1,8 @@
+const { getParticipantList } = require("../utils/sessionHelpers");
+
 // === In-memory sessions ===
 const sessions = new Map();
+exports.sessions = sessions;
 
 function generateCode() {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -8,7 +11,12 @@ function generateCode() {
 // --- API Controllers ---
 exports.startSession = (req, res) => {
   const code = generateCode();
-  sessions.set(code, { participants: new Map(), active: true });
+  sessions.set(code, {
+    participants: new Map(), // socket.id → name
+    cameraStatus: new Map(), // name → { active: true, socketId }
+    active: true,
+    presenterSocket: null,
+  });
   console.log(`✅ Session started with code: ${code}`);
   res.json({ code });
 };
@@ -48,12 +56,18 @@ exports.initSocket = (io) => {
       if (!session || !session.active)
         return socket.emit("error", { message: "Invalid or inactive session" });
 
+      // Prevent duplicate names (optional)
+      for (const [id, n] of session.participants) {
+        if (n === name) {
+          return socket.emit("error", { message: "Name already taken" });
+        }
+      }
+
       session.participants.set(socket.id, name);
+      session.cameraStatus.set(name, { active: false, socketId: socket.id });
       socket.join(code);
-      io.to(code).emit(
-        "participant-list",
-        Array.from(session.participants.values())
-      );
+      // Notify everyone (including presenter)
+      io.to(code).emit("participant-list", getParticipantList(session));
       console.log(`${name} joined session ${code}`);
     });
 
@@ -115,9 +129,12 @@ document.getElementById('end').addEventListener('click', async () => {
 
 socket.on('participant-list', function(list) {
  console.log('Received participant list:', list);
-  const html = list.map(n => '<li>' + n + '</li>').join('');
-  document.getElementById('participants').innerHTML =
-        list.map(name => '<li>' + name + '</li>').join('');
+ const html = list
+    .map(p => {
+      return \`<li>\${p.name} — Camera: \${p.cameraOn ? "On" : "Off"}</li>\`;
+    })
+    .join('');
+  document.getElementById('participants').innerHTML = html;
       document.getElementById('count').textContent = list.length;
 });
 </script>
